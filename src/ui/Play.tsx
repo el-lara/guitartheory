@@ -162,7 +162,7 @@ export function Play({ s }: { s: Snapshot }) {
           <>
             <div className="hints">
               <button className="hint-btn" disabled={s.hintsDone || revealing} onClick={() => game.hint()}>
-                💡 {s.hints.length === 0 ? 'Pista' : s.hintsDone ? 'Sin más pistas' : 'Otra pista'}
+                💡 {s.hints.length === 0 ? 'Pista de teoría' : s.hintsDone ? 'Sin más pistas' : 'Otra pista'}
               </button>
               {s.hints.map((h, i) => <p key={i} className="hint-text">{h}</p>)}
             </div>

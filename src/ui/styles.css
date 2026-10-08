@@ -157,7 +157,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .note-label.sharp { fill: rgba(255, 255, 255, .42); }
 .marker.hint circle { fill: none; stroke: var(--accent); stroke-width: 4; animation: pulse 1s ease-in-out infinite; }
 @keyframes pulse { 50% { transform: scale(1.25); opacity: .5; } }
-.hints { max-width: 520px; margin: 4px auto 0; background: var(--panel); border-radius: 12px; padding: 8px 12px; text-align: left; }
+.hints { max-width: 620px; margin: 4px auto 0; background: var(--panel); border-radius: 12px; padding: 8px 12px; text-align: left; }
 .hint-btn { background: none; border: 0; color: var(--accent); font-weight: 700; padding: 4px 0; }
 .hint-btn:disabled { color: var(--dim); cursor: default; }
 .hint-text { margin: 4px 0 2px; font-size: .92rem; color: var(--text); opacity: .92; }
