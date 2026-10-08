@@ -13,23 +13,13 @@ import {
 } from '../fretboard/fretboard';
 import { CHORD_FORMULAS, chordName, chordPcs, INTERVALS, intervalName, noteName, NOTE_NAMES, type ChordQuality } from '../theory';
 import { findVoicings, targetsFrom } from '../challenges/util';
-import { game } from './useGame';
+import { Practice, cap, plural } from './lessonKit';
+import { ScalesLesson } from './ScalesLesson';
+import { GeometryLesson } from './GeometryLesson';
 import { Fretboard, type Marker } from './Fretboard';
-import type { StageId } from '../progression/stages';
 
-type Tab = 'notes' | 'intervals' | 'chords';
+type Tab = 'notes' | 'intervals' | 'chords' | 'scales' | 'geometry';
 const FULL = { fretMin: 0, fretMax: 12 };
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-const plural = (n: number) => `${n} ${n === 1 ? 'semitono' : 'semitonos'}`;
-
-function Practice({ stage, label }: { stage: StageId; label: string }) {
-  return (
-    <button className="big small" onClick={() => game.start({ mode: stage, minutes: 5 })}>
-      {label}
-    </button>
-  );
-}
-
 function NotesLesson() {
   const [sel, setSel] = useState<Position>({ string: 1, fret: 3 });
   const pc = positionPc(sel);
@@ -184,13 +174,15 @@ export function Lessons({ onBack }: { onBack: () => void }) {
         <span />
       </header>
       <div className="tabs" role="tablist">
-        {([['notes', 'Notas'], ['intervals', 'Intervalos'], ['chords', 'Acordes']] as [Tab, string][]).map(([id, label]) => (
+        {([['notes', 'Notas'], ['intervals', 'Intervalos'], ['chords', 'Acordes'], ['scales', 'Escalas'], ['geometry', 'Geometría']] as [Tab, string][]).map(([id, label]) => (
           <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'sel' : ''} onClick={() => setTab(id)}>{label}</button>
         ))}
       </div>
       {tab === 'notes' && <NotesLesson />}
       {tab === 'intervals' && <IntervalsLesson />}
       {tab === 'chords' && <ChordsLesson />}
+      {tab === 'scales' && <ScalesLesson />}
+      {tab === 'geometry' && <GeometryLesson />}
     </div>
   );
 }

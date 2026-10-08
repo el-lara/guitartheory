@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ascendingDistance, chordName, chordPcs, intervalName, noteName, parseNote, scalePcs, transpose } from './index';
+import { ascendingDistance, chordName, chordPcs, fifthsPc, intervalName, keySignature, noteName, parseNote, scalePcs, scaleSteps, transpose } from './index';
 
 describe('theory', () => {
   it('parses and names notes', () => {
@@ -26,5 +26,28 @@ describe('theory', () => {
   it('builds scales', () => {
     expect(scalePcs(parseNote('G'), 'major').map(noteName)).toEqual(['G', 'A', 'B', 'C', 'D', 'E', 'F#']);
     expect(scalePcs(parseNote('A'), 'naturalMinor').map(noteName)).toEqual(['A', 'B', 'C', 'D', 'E', 'F', 'G']);
+  });
+  it('builds pentatonic and blues scales and step patterns', () => {
+    expect(scalePcs(parseNote('A'), 'pentatonicMinor').map(noteName)).toEqual(['A', 'C', 'D', 'E', 'G']);
+    expect(scalePcs(parseNote('C'), 'pentatonicMajor').map(noteName)).toEqual(['C', 'D', 'E', 'G', 'A']);
+    expect(scalePcs(parseNote('A'), 'blues').map(noteName)).toEqual(['A', 'C', 'D', 'D#', 'E', 'G']);
+    expect(scaleSteps('major')).toEqual([2, 2, 1, 2, 2, 2, 1]);
+    expect(scaleSteps('naturalMinor')).toEqual([2, 1, 2, 2, 1, 2, 2]);
+    expect(scaleSteps('pentatonicMinor')).toEqual([3, 2, 2, 3, 2]);
+  });
+  it('relative minor shares notes with its major (same set, other tonic)', () => {
+    const cMajor = [...scalePcs(parseNote('C'), 'major')].sort((a, b) => a - b);
+    const aMinor = [...scalePcs(parseNote('A'), 'naturalMinor')].sort((a, b) => a - b);
+    expect(aMinor).toEqual(cMajor);
+  });
+  it('circle of fifths: order and key signatures', () => {
+    expect(Array.from({ length: 12 }, (_, k) => noteName(fifthsPc(k)))).toEqual(['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#', 'G#', 'D#', 'A#', 'F']);
+    expect(keySignature(1)).toEqual({ kind: 'sharps', count: 1, notes: ['F#'] });
+    expect(keySignature(11)).toEqual({ kind: 'flats', count: 1, notes: ['Bb'] });
+    expect(keySignature(0).count).toBe(0);
+    // a major scale occupies 7 consecutive places on the circle of fifths (IV I V II VI III VII)
+    const k = 3; // A
+    const around = Array.from({ length: 7 }, (_, i) => fifthsPc(k - 1 + i)).sort((a, b) => a - b);
+    expect(around).toEqual([...scalePcs(fifthsPc(k), 'major')].sort((a, b) => a - b));
   });
 });

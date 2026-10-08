@@ -203,3 +203,28 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .marker.target circle { fill: var(--violet); }
 .marker.step circle { fill: rgba(255, 255, 255, .85); }
 .marker.step text { font-size: 10px; }
+.marker.dim circle { fill: rgba(255, 255, 255, .16); }
+.marker.dim text { fill: rgba(255, 255, 255, .35); }
+.sep { width: 10px; }
+.pill:disabled { opacity: .35; cursor: default; }
+.tabs { flex-wrap: wrap; }
+.tabs button { padding: 8px 14px; }
+.geo { display: block; width: 100%; max-width: 440px; margin: 6px auto; user-select: none; touch-action: manipulation; }
+.geo-ring { fill: none; stroke: var(--panel2); stroke-width: 2; }
+.geo-shape { fill: rgba(255, 183, 3, .18); stroke: var(--accent); stroke-width: 4; }
+.geo-pt { cursor: pointer; }
+.geo-pt circle.off { fill: var(--panel); stroke: var(--panel2); stroke-width: 1.5; transition: all .3s; }
+.geo-pt circle.on { fill: var(--info); transition: all .3s; }
+.geo-pt circle.on.root { fill: var(--accent); }
+.geo-pt text { font-size: 13px; font-weight: 700; }
+.geo-pt text.off { fill: var(--dim); }
+.geo-pt text.on { fill: #11110f; }
+.geo-arc { fill: var(--ok); font-size: 18px; font-weight: 800; }
+.geo-center { fill: var(--text); font-size: 17px; font-weight: 800; }
+.geo-center-sub { fill: var(--dim); font-size: 14px; }
+.geo-band { fill: none; stroke: rgba(124, 196, 255, .22); stroke-width: 44; stroke-linecap: butt; }
+.geo-pt circle.minor.off { fill: var(--panel); }
+.geo-pt circle.minor.on { fill: var(--violet); }
+.geo-pt .geo-minor { font-size: 10px; fill: #11110f; }
+.geo-pt circle.minor.off + .geo-minor { fill: var(--dim); }
+.geo-roman { fill: var(--accent); font-size: 12px; font-weight: 800; }

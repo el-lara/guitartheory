@@ -12,7 +12,7 @@ Funciona en el navegador (PC y móvil), sin instalar nada ni crear cuenta. Tu pr
 - **Cazador de intervalos**: encuentra quintas, terceras, octavas… desde cualquier nota.
 - **Constructor de acordes**: construye tríadas mayores y menores nota a nota.
 
-- **Clases**: explicadores visuales e interactivos (notas y semitonos, intervalos, acordes) que dibujan en el mástil lo que se explica.
+- **Clases**: explicadores visuales e interactivos: notas y semitonos, intervalos, acordes, escalas con cajas sobre el mástil, y geometría (reloj de las 12 notas y círculo de quintas).
 
 La dificultad se adapta a tu rendimiento y lo que más fallas vuelve a aparecer más a menudo.
 
