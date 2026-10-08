@@ -1,7 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { audio, setMuted } from '../audio/webAudio';
+import type { Discovery } from '../game/discovery';
 import { Fretboard, type Marker } from './Fretboard';
 import { game } from './useGame';
-import { positionNote } from '../fretboard/fretboard';
+import { positionMidi, positionNote } from '../fretboard/fretboard';
 import { intervalName } from '../theory';
 import { MAX_LIVES, type Snapshot } from '../game/Game';
 
@@ -35,6 +37,12 @@ function markersFor(s: Snapshot): Marker[] {
   return out;
 }
 
+function playDiscovery(d: Discovery | null) {
+  if (!d?.sound) return;
+  if (d.sound.type === 'chord') audio.playChord(d.sound.midis);
+  else audio.playInterval(d.sound.midis[0], d.sound.midis[1], 'melodic');
+}
+
 function fmt(ms: number) {
   const t = Math.ceil(ms / 1000);
   return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
@@ -42,6 +50,11 @@ function fmt(ms: number) {
 
 export function Play({ s }: { s: Snapshot }) {
   const ch = s.challenge;
+  const [muted, setMutedState] = useState(audio.muted);
+  const discovery = s.phase === 'discovery' ? s.discovery : null;
+  useEffect(() => {
+    if (discovery) playDiscovery(discovery);
+  }, [discovery]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (s.phase === 'discovery' && (e.key === 'Enter' || e.key === ' ')) {
@@ -87,7 +100,10 @@ export function Play({ s }: { s: Snapshot }) {
         </div>
         <div className="hud-right">
           <div className="score">{s.score}</div>
-          <button className="ghost" onClick={() => game.quit()}>Terminar</button>
+          <div className="hud-btns">
+            <button className="ghost" aria-label={muted ? 'Activar sonido' : 'Silenciar'} onClick={() => { setMuted(!muted); setMutedState(!muted); }}>{muted ? '🔇' : '🔊'}</button>
+            <button className="ghost" onClick={() => game.quit()}>Terminar</button>
+          </div>
         </div>
       </header>
 
@@ -109,7 +125,7 @@ export function Play({ s }: { s: Snapshot }) {
         markers={markersFor(s)}
         highlight={highlight}
         disabled={inDiscovery || revealing}
-        onPlay={(pos) => game.click(pos)}
+        onPlay={(pos) => { audio.playNote(positionMidi(pos)); game.click(pos); }}
       />
 
       {spec.type === 'choice' && !inDiscovery && (
@@ -126,6 +142,7 @@ export function Play({ s }: { s: Snapshot }) {
             {s.discovery.fail && <div className="disc-tag">Esta era la respuesta</div>}
             <div className="disc-head">{s.discovery.heading}</div>
             {s.discovery.lines.map((l, i) => <div key={i} className="disc-line">{l}</div>)}
+            {s.discovery.sound && <button className="ghost" onClick={() => playDiscovery(s.discovery)}>🔊 Escuchar otra vez</button>}
             <button className="big" autoFocus onClick={() => game.next()}>Siguiente</button>
           </div>
         ) : (

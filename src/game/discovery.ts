@@ -7,6 +7,8 @@ export interface Discovery {
   lines: string[];
   /** The challenge was failed; the board shows the answer. */
   fail: boolean;
+  /** What to play when the card appears / on replay. */
+  sound?: { type: 'chord'; midis: number[] } | { type: 'interval'; midis: [number, number] };
 }
 
 export interface StepRecord {
@@ -55,18 +57,19 @@ export function buildDiscovery(records: StepRecord[], fail: boolean): Discovery 
       lines.push(`${root} → ${noteName(pcs[i + 1])} = ${intervalName(semi)}`);
     });
     lines.push(`Una ${f.family} es ${f.degrees.join(' · ')}`);
-    return { heading: `${fail ? '' : '✓ '}${blocks.map((b) => b.notes).join('  →  ')}`, lines, fail };
+    const midis = chords[chords.length - 1].progress.selected.map((p) => positionMidi(p));
+    return { heading: `${fail ? '' : '✓ '}${blocks.map((b) => b.notes).join('  →  ')}`, lines, fail, sound: { type: 'chord', midis } };
   }
   for (let i = records.length - 1; i >= 0; i--) {
     const r = records[i];
     if (r.spec.type === 'interval' && r.progress.type === 'interval' && r.progress.origin && r.progress.targets.length) {
       const d = intervalLines(r.progress.origin, r.progress.targets);
-      return { heading: `${fail ? '' : '✓ '}${d.heading}`, lines: d.lines, fail };
+      return { heading: `${fail ? '' : '✓ '}${d.heading}`, lines: d.lines, fail, sound: { type: 'interval', midis: [positionMidi(r.progress.origin), positionMidi(r.progress.targets[0])] } };
     }
     if (r.spec.type === 'choice') {
       const [a, b] = r.spec.marks;
       const d = intervalLines(a, [b]);
-      return { heading: `${fail ? '' : '✓ '}${d.heading}`, lines: d.lines.slice(0, 1), fail };
+      return { heading: `${fail ? '' : '✓ '}${d.heading}`, lines: d.lines.slice(0, 1), fail, sound: { type: 'interval', midis: [positionMidi(a), positionMidi(b)] } };
     }
   }
   return fail ? { heading: 'Así era', lines: [], fail } : null;

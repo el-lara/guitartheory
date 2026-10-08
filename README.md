@@ -25,7 +25,7 @@ npm test         # tests de teoría, evaluador, generadores (bot perfecto), SRS 
 npm run build    # tsc + vite build
 ```
 
-Parámetros útiles: `?unlock=all` desbloquea todas las etapas; `?debug` expone `__game` / `__solve()` en `window`.
+Parámetros útiles: `?gate=1` activa el desbloqueo por rendimiento (por defecto todas las etapas están abiertas); `?debug` expone `__game` / `__solve()` en `window`.
 
 ## Arquitectura (`src/`)
 
@@ -46,4 +46,4 @@ Parámetros útiles: `?unlock=all` desbloquea todas las etapas; `?debug` expone 
 - **Intervalos**: ascendentes, distancia exacta en semitonos (cualquier par de posiciones equivalente vale; la octava exige +12).
 - **Acordes**: una nota por cuerda, máximo 4 trastes de separación (mano real), cualquier inversión/duplicación vale; se completa al cubrir todas las notas del acorde.
 - **Vidas**: 5; cada error, tiempo agotado o rendición resta 1; +1 cada 6 aciertos seguidos. 3 errores en un desafío lo fallan y muestran la respuesta.
-- **Nivel** (1–5, por etapa): sube con 8 desafíos recientes de ≥80 % de acierto, baja con ≥50 % de fallos. Las etapas 2 y 3 se desbloquean con nivel 2 de la anterior.
+- **Nivel** (1–5, por etapa): sube con 8 desafíos recientes de ≥80 % de acierto, baja con ≥50 % de fallos. Con `?gate=1`, las etapas 2 y 3 se desbloquean con nivel 2 de la anterior.

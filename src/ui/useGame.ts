@@ -10,7 +10,8 @@ export const game = new Game({
   initial: loadPersisted(),
   rng: mulberry32((Date.now() ^ 0x9e3779b9) >>> 0),
   save: savePersisted,
-  unlockAll: params.get('unlock') === 'all',
+  // All stages are open by default; `?gate=1` restores performance-based unlocking.
+  unlockAll: params.get('gate') !== '1',
 });
 
 export function useGame() {

@@ -147,3 +147,4 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .prompt-area { min-height: 112px; }
   .logo { font-size: 2.1rem; }
 }
+.hud-btns { display: flex; align-items: center; }
