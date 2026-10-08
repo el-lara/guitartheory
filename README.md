@@ -1,6 +1,22 @@
 # FretQuest
 
-Juego de entrenamiento de teoría musical sobre un mástil de guitarra (React + TypeScript + Vite, sin backend).
+Aprende teoría musical en la guitarra **jugando**: encuentra notas, descubre intervalos y construye acordes sobre un mástil interactivo, en sesiones de 5 a 15 minutos.
+
+### 👉 [Jugar ahora](https://el-lara.github.io/guitartheory/)
+
+Funciona en el navegador (PC y móvil), sin instalar nada ni crear cuenta. Tu progreso se guarda en tu navegador.
+
+## Modos
+
+- **Cazador de notas**: localiza notas en el mástil con distintos retos (todas las apariciones, en una cuerda, contrarreloj, memoria…).
+- **Cazador de intervalos**: encuentra quintas, terceras, octavas… desde cualquier nota.
+- **Constructor de acordes**: construye tríadas mayores y menores nota a nota.
+
+La dificultad se adapta a tu rendimiento y lo que más fallas vuelve a aparecer más a menudo.
+
+## Desarrollo
+
+React + TypeScript + Vite, sin backend.
 
 ```
 npm install
