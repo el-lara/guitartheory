@@ -33,6 +33,7 @@ function markersFor(s: Snapshot): Marker[] {
     out.push({ pos: step.spec.marks[0], kind: 'mark', label: '1' }, { pos: step.spec.marks[1], kind: 'mark', label: '2' });
   }
   for (const pos of s.solution) out.push({ pos, kind: 'solution', label: positionNote(pos) });
+  if (s.hintPos) out.push({ pos: s.hintPos, kind: 'hint' });
   if (s.flash) out.push({ pos: s.flash.pos, kind: 'wrong' });
   return out;
 }
@@ -101,8 +102,9 @@ export function Play({ s }: { s: Snapshot }) {
         <div className="hud-right">
           <div className="score">{s.score}</div>
           <div className="hud-btns">
+            <button className="ghost" aria-label="Volver al menú" title="Menú" onClick={() => game.home()}>⌂ Menú</button>
             <button className="ghost" aria-label={muted ? 'Activar sonido' : 'Silenciar'} onClick={() => { setMuted(!muted); setMutedState(!muted); }}>{muted ? '🔇' : '🔊'}</button>
-            <button className="ghost" onClick={() => game.quit()}>Terminar</button>
+            <button className="ghost" onClick={() => game.quit()}>Fin</button>
           </div>
         </div>
       </header>
@@ -120,13 +122,24 @@ export function Play({ s }: { s: Snapshot }) {
         {timePct !== null && <div className={`timer${timePct < 30 ? ' low' : ''}`}><i style={{ width: `${timePct}%` }} /></div>}
       </section>
 
-      <Fretboard
-        fretMax={ch.fretMax}
-        markers={markersFor(s)}
-        highlight={highlight}
-        disabled={inDiscovery || revealing}
-        onPlay={(pos) => { audio.playNote(positionMidi(pos)); game.click(pos); }}
-      />
+      <div className="board-wrap">
+        <button
+          className={`reveal-btn${s.reveal ? ' on' : ''}`}
+          aria-pressed={s.reveal}
+          title="Mostrar todas las notas (cuenta como ayuda)"
+          onClick={() => game.setReveal(!s.reveal)}
+        >
+          {s.reveal ? '👁 Ocultar notas' : '👁 Ver notas'}
+        </button>
+        <Fretboard
+          fretMax={ch.fretMax}
+          markers={markersFor(s)}
+          highlight={highlight}
+          showNotes={s.reveal}
+          disabled={inDiscovery || revealing}
+          onPlay={(pos) => { audio.playNote(positionMidi(pos)); game.click(pos); }}
+        />
+      </div>
 
       {spec.type === 'choice' && !inDiscovery && (
         <div className="choices">
@@ -147,6 +160,12 @@ export function Play({ s }: { s: Snapshot }) {
           </div>
         ) : (
           <>
+            <div className="hints">
+              <button className="hint-btn" disabled={s.hintsDone || revealing} onClick={() => game.hint()}>
+                💡 {s.hints.length === 0 ? 'Pista' : s.hintsDone ? 'Sin más pistas' : 'Otra pista'}
+              </button>
+              {s.hints.map((h, i) => <p key={i} className="hint-text">{h}</p>)}
+            </div>
             <div className="feedback-row">
               {s.feedback && <div key={s.feedback.id} className={`feedback ${s.feedback.kind}`}>{s.feedback.text}</div>}
             </div>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { stringOrdinal, STANDARD_TUNING, type Position, type Region } from '../fretboard/fretboard';
+import { positionNote, stringOrdinal, STANDARD_TUNING, type Position, type Region } from '../fretboard/fretboard';
 
-export type MarkerKind = 'found' | 'locked' | 'origin' | 'mark' | 'reveal' | 'solution' | 'wrong';
+export type MarkerKind = 'hint' | 'found' | 'locked' | 'origin' | 'mark' | 'reveal' | 'solution' | 'wrong';
 export interface Marker {
   pos: Position;
   kind: MarkerKind;
@@ -13,13 +13,15 @@ interface Props {
   markers: Marker[];
   highlight?: Region | null;
   disabled?: boolean;
+  /** Draw every note name on the neck. */
+  showNotes?: boolean;
   onPlay: (pos: Position) => void;
 }
 
 const SINGLE_INLAYS = [3, 5, 7, 9];
 const STRINGS = STANDARD_TUNING.strings.length;
 
-export function Fretboard({ fretMax, markers, highlight, disabled, onPlay }: Props) {
+export function Fretboard({ fretMax, markers, highlight, disabled, showNotes, onPlay }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(900);
 
@@ -109,6 +111,12 @@ export function Fretboard({ fretMax, markers, highlight, disabled, onPlay }: Pro
             <circle cx={cx(p.fret)} cy={rowY(p.string)} r={r * 0.8} className="hover-dot" />
           </g>
         ))}
+        {showNotes && cells.map((p) => {
+          const n = positionNote(p);
+          return (
+            <text key={`n${p.string}:${p.fret}`} x={cx(p.fret)} y={rowY(p.string) + 4} textAnchor="middle" className={`note-label${n.includes('#') ? ' sharp' : ''}`}>{n}</text>
+          );
+        })}
         {/* markers */}
         {markers.map((m, i) => (
           <g key={`${m.kind}-${m.pos.string}-${m.pos.fret}-${i}`} className={`marker ${m.kind}`} transform={`translate(${cx(m.pos.fret)} ${rowY(m.pos.string)})`}>

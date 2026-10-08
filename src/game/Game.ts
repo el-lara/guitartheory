@@ -1,5 +1,6 @@
 import { generateChallenge } from '../challenges/generate';
 import type { Challenge } from '../challenges/types';
+import { hintFor } from '../engine/hints';
 import { autoSolve, evaluateChoice, evaluateClick, initProgress, stepAnchor } from '../engine/evaluator';
 import type { EvalContext, StepProgress } from '../engine/types';
 import type { Position } from '../fretboard/fretboard';
@@ -60,6 +61,11 @@ export interface Snapshot {
   /** Answer shown on the board after a failed challenge. */
   solution: Position[];
   levelToast: { id: number; text: string } | null;
+  /** Show every note name on the neck (study aid; makes the challenge "assisted"). */
+  reveal: boolean;
+  hints: string[];
+  hintPos: Position | null;
+  hintsDone: boolean;
   summary: Summary | null;
   levels: Record<StageId, number>;
   bestScore: number;
@@ -104,6 +110,9 @@ export class Game {
   private lastConcepts: string[] = [];
   private sessionMisses: Record<string, number> = {};
   private challengeTotalMs = 0;
+  private hintLevel = 0;
+  /** Hints or note-reveal were used in the current challenge. */
+  private assisted = false;
   private nextChallengeId = 1;
 
   constructor(opts: GameOptions) {
@@ -136,7 +145,7 @@ export class Game {
     return {
       phase: 'idle', config, sessionMsLeft: config.minutes * 60000, score: 0, streak: 0, bestStreak: 0,
       lives: MAX_LIVES, total: 0, perfect: 0, challenge: null, stepIndex: 0, progress: null, challengeMsLeft: null,
-      revealMsLeft: 0, feedback: null, flash: null, discovery: null, solution: [], levelToast: null, summary: null,
+      revealMsLeft: 0, feedback: null, flash: null, discovery: null, solution: [], levelToast: null, reveal: this.s?.reveal ?? false, hints: [], hintPos: null, hintsDone: false, summary: null,
       levels: this.levels(), bestScore: this.bestScore,
     };
   }
@@ -250,6 +259,7 @@ export class Game {
     this.s.feedback = null;
     this.challengeTotalMs = ch.timeLimitMs ?? 0;
     this.s.challengeMsLeft = ch.timeLimitMs ?? null;
+    this.assisted = this.s.reveal;
     this.beginStep(0);
   }
 
@@ -263,6 +273,35 @@ export class Game {
     this.s.stepIndex = i;
     this.s.progress = initProgress(step.spec, this.ctx());
     this.s.revealMsLeft = step.reveal?.ms ?? 0;
+    this.resetHints();
+  }
+
+  private resetHints() {
+    this.hintLevel = 0;
+    this.s.hints = [];
+    this.s.hintPos = null;
+    this.s.hintsDone = false;
+  }
+
+  setReveal(on: boolean) {
+    this.s.reveal = on;
+    if (on && this.s.phase === 'playing') this.assisted = true;
+    this.emit();
+  }
+
+  /** Next progressive hint for the current step. */
+  hint() {
+    const s = this.s;
+    if (s.phase !== 'playing' || !s.challenge || !s.progress || this.advanceInMs > 0 || s.revealMsLeft > 0) return;
+    const spec = s.challenge.steps[s.stepIndex].spec;
+    const h = hintFor(spec, s.progress, this.ctx(), this.hintLevel);
+    if (!h) return;
+    this.assisted = true;
+    this.hintLevel++;
+    s.hints = [...s.hints, h.text];
+    if (h.pos) s.hintPos = h.pos;
+    s.hintsDone = !hintFor(spec, s.progress, this.ctx(), this.hintLevel);
+    this.emit();
   }
 
   private say(kind: Feedback['kind'], text: string) {
@@ -314,6 +353,7 @@ export class Game {
     s.score += Math.round(10 * (1 + Math.min(s.streak, 30) / 10));
     if (s.streak % STREAK_PER_LIFE === 0 && s.lives < MAX_LIVES) s.lives++;
     this.say('ok', message);
+    if (!complete) this.resetHints();
     if (complete) this.completeStep();
     this.emit();
   }
@@ -360,8 +400,10 @@ export class Game {
     this.failChallenge(this.loseLife());
   }
 
-  private finishChallenge(outcome: Outcome, outOfLives = false) {
+  private finishChallenge(outcomeIn: Outcome, outOfLives = false) {
     const s = this.s;
+    // using hints or the note reveal means it was not a clean solve
+    const outcome: Outcome = this.assisted && outcomeIn === 'perfect' ? 'ok' : outcomeIn;
     const ch = s.challenge!;
     s.total++;
     if (outcome === 'perfect') s.perfect++;

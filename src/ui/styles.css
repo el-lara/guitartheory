@@ -148,3 +148,18 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .logo { font-size: 2.1rem; }
 }
 .hud-btns { display: flex; align-items: center; }
+
+/* reveal + hints */
+.board-wrap { position: relative; }
+.reveal-btn { position: absolute; right: 4px; top: -6px; z-index: 2; font-size: .72rem; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--panel2); background: rgba(20, 17, 15, .85); color: var(--dim); }
+.reveal-btn.on { color: var(--accent); border-color: var(--accent); }
+.note-label { fill: rgba(255, 255, 255, .55); font-size: 11px; font-weight: 600; text-anchor: middle; pointer-events: none; }
+.note-label.sharp { fill: rgba(255, 255, 255, .42); }
+.marker.hint circle { fill: none; stroke: var(--accent); stroke-width: 4; animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.25); opacity: .5; } }
+.hints { max-width: 520px; margin: 4px auto 0; background: var(--panel); border-radius: 12px; padding: 8px 12px; text-align: left; }
+.hint-btn { background: none; border: 0; color: var(--accent); font-weight: 700; padding: 4px 0; }
+.hint-btn:disabled { color: var(--dim); cursor: default; }
+.hint-text { margin: 4px 0 2px; font-size: .92rem; color: var(--text); opacity: .92; }
+.bottom { min-height: 150px; }
+@media (max-width: 520px) { .hud-btns .ghost { padding: 6px 6px; } }
