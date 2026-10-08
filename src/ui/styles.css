@@ -163,3 +163,43 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .hint-text { margin: 4px 0 2px; font-size: .92rem; color: var(--text); opacity: .92; }
 .bottom { min-height: 150px; }
 @media (max-width: 520px) { .hud-btns .ghost { padding: 6px 6px; } }
+
+/* lessons */
+.lessons-link { display: block; width: 100%; text-align: left; background: var(--panel); border: 2px solid var(--info); border-radius: 14px; padding: 14px 16px; margin-top: 18px; }
+.lessons-link b { display: block; font-size: 1.05rem; }
+.lessons-link span { color: var(--dim); font-size: .85rem; }
+.lessons { padding-top: 6px; }
+.lessons-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
+.lessons-head h1 { margin: 0; font-size: 1.4rem; }
+.lessons-head .ghost { justify-self: start; }
+.tabs { display: flex; justify-content: center; gap: 6px; margin: 8px 0; }
+.tabs button { padding: 8px 18px; border-radius: 999px; border: 2px solid var(--panel2); background: var(--panel); font-weight: 700; }
+.tabs button.sel { border-color: var(--accent); color: var(--accent); }
+.chips-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 8px 0; }
+.pill { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--panel2); background: var(--panel); font-size: .85rem; }
+.pill.wide { padding: 6px 16px; }
+.pill.sel { background: var(--accent); color: #1a1205; border-color: var(--accent); font-weight: 700; }
+.lesson-card { max-width: 720px; margin: 8px auto 0; background: var(--panel); border-radius: 16px; padding: 16px 20px 20px; line-height: 1.5; }
+.lesson-card h2 { margin: 0 0 4px; font-size: 1.4rem; }
+.lesson-card .lead { color: var(--dim); margin: 0 0 8px; font-size: .9rem; }
+.lesson-card ul { padding-left: 20px; margin: 8px 0; }
+.big-line { font-size: 1.8rem; font-weight: 800; color: var(--accent); margin: 2px 0 6px; }
+.row { display: flex; gap: 6px; }
+.big.small { font-size: 1rem; padding: 12px 20px; margin: 12px 0 0; max-width: 280px; }
+.formula { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 8px 0; }
+.formula-part { display: inline-flex; align-items: center; gap: 4px; }
+.step { font-style: normal; color: var(--dim); font-size: .85rem; padding: 0 4px; }
+.tone { display: inline-flex; flex-direction: column; align-items: center; min-width: 52px; padding: 6px 10px; border-radius: 10px; color: #11110f; }
+.tone b { font-size: 1.2rem; }
+.tone small { font-size: .7rem; opacity: .75; }
+.tone.deg1, .legend .deg1 { background: var(--accent); }
+.tone.deg3, .legend .deg3 { background: var(--ok); }
+.tone.deg5, .legend .deg5 { background: var(--info); }
+.legend { display: flex; gap: 6px; font-size: .75rem; margin: 8px 0; }
+.legend span { padding: 2px 10px; border-radius: 999px; color: #11110f; font-weight: 700; }
+.marker.deg1 circle { fill: var(--accent); }
+.marker.deg3 circle { fill: var(--ok); }
+.marker.deg5 circle { fill: var(--info); }
+.marker.target circle { fill: var(--violet); }
+.marker.step circle { fill: rgba(255, 255, 255, .85); }
+.marker.step text { font-size: 10px; }

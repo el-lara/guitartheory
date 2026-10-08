@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { positionNote, stringOrdinal, STANDARD_TUNING, type Position, type Region } from '../fretboard/fretboard';
 
-export type MarkerKind = 'hint' | 'found' | 'locked' | 'origin' | 'mark' | 'reveal' | 'solution' | 'wrong';
+export type MarkerKind = 'target' | 'step' | 'deg1' | 'deg3' | 'deg5' | 'dim' | 'hint' | 'found' | 'locked' | 'origin' | 'mark' | 'reveal' | 'solution' | 'wrong';
 export interface Marker {
   pos: Position;
   kind: MarkerKind;
@@ -120,7 +120,7 @@ export function Fretboard({ fretMax, markers, highlight, disabled, showNotes, on
         {/* markers */}
         {markers.map((m, i) => (
           <g key={`${m.kind}-${m.pos.string}-${m.pos.fret}-${i}`} className={`marker ${m.kind}`} transform={`translate(${cx(m.pos.fret)} ${rowY(m.pos.string)})`}>
-            <circle r={r} />
+            <circle r={m.kind === 'step' ? r * 0.55 : r} />
             <text y={4.5} textAnchor="middle">{m.kind === 'wrong' ? '✕' : m.label}</text>
           </g>
         ))}

@@ -33,7 +33,7 @@ const STRING_RULE =
 /** Number of the interval counting from the origin (a 5th = 5th note counting the origin as 1). */
 const DEGREE = [1, 2, 2, 3, 3, 4, 0, 5, 6, 6, 7, 7, 8];
 
-function intervalLesson(semitones: number): string {
+export function intervalLesson(semitones: number): string {
   const name = intervalName(semitones);
   if (semitones === 6) return 'Tritono: 6 semitonos, justo la mitad de una octava.';
   const deg = DEGREE[semitones];

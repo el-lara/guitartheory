@@ -13,7 +13,7 @@ const DEMO = [
   { pos: { string: 3, fret: 0 }, kind: 'found' as const, label: 'G' },
 ];
 
-export function Home({ s }: { s: Snapshot }) {
+export function Home({ s, onLessons }: { s: Snapshot; onLessons: () => void }) {
   const [mode, setMode] = useState<Mode>('mix');
   const [minutes, setMinutes] = useState(5);
 
@@ -23,6 +23,10 @@ export function Home({ s }: { s: Snapshot }) {
       <p className="tag">Aprende el mástil jugando.</p>
       <Fretboard fretMax={8} markers={DEMO} onPlay={() => {}} disabled />
 
+      <button className="lessons-link" onClick={onLessons}>
+        <b>📖 Clases</b>
+        <span>Ve en el mástil qué es una nota, una quinta, un acorde…</span>
+      </button>
       <div className="modes">
         <button className={`mode mix${mode === 'mix' ? ' sel' : ''}`} onClick={() => setMode('mix')}>
           <b>Entrenamiento mixto</b>
