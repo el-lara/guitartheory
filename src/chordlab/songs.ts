@@ -93,6 +93,18 @@ const mapRow = (song: Song, rowId: string, fn: (row: SongRow) => SongRow): Song 
 export const addItem = (song: Song, rowId: string, item: SongItem): Song =>
   mapRow(song, rowId, (r) => ({ ...r, items: [...r.items, item] }));
 
+export const addItems = (song: Song, rowId: string, items: SongItem[]): Song =>
+  mapRow(song, rowId, (r) => ({ ...r, items: [...r.items, ...items] }));
+
+/** Replaces one item with several (e.g. a scale with its chords), keeping its place in the row. */
+export const replaceItem = (song: Song, itemId: string, items: SongItem[]): Song =>
+  mapRows(song, (rows) =>
+    rows.map((r) => {
+      const i = r.items.findIndex((c) => c.id === itemId);
+      return i < 0 ? r : { ...r, items: [...r.items.slice(0, i), ...items, ...r.items.slice(i + 1)] };
+    }),
+  );
+
 export const removeItem = (song: Song, itemId: string): Song =>
   mapRows(song, (rows) => rows.map((r) => ({ ...r, items: r.items.filter((c) => c.id !== itemId) })));
 

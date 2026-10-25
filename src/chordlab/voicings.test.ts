@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LIBRARY_QUALITIES, libraryPcs, parseNote } from '../theory';
-import { fretsText, inversionOf, searchVoicings, stringPc, voicingSymbol } from './voicings';
+import { fretsText, inversionOf, pickVoicing, searchVoicings, stringPc, voicingSymbol } from './voicings';
 
 const texts = (root: string, q: Parameters<typeof searchVoicings>[1], inv: number) =>
   (searchVoicings(parseNote(root), q).find((g) => g.inversion === inv)?.voicings ?? []).map((v) => fretsText(v.frets));
@@ -61,5 +61,14 @@ describe('voicing ranking', () => {
     expect(first('G', 'maj')).toBe('320003');
     expect(first('E', 'min')).toBe('022000');
     expect(first('F', 'maj')).toBe('133211');
+  });
+});
+
+describe('pickVoicing', () => {
+  it('uses the easiest shape, or the one nearest a neck position', () => {
+    expect(fretsText(pickVoicing(parseNote('C'), 'maj'))).toBe('x32010');
+    const near = pickVoicing(parseNote('C'), 'maj', 8);
+    expect(Math.min(...near.filter((f) => f > 0))).toBeGreaterThanOrEqual(7);
+    expect(inversionOf(parseNote('C'), 'maj', near)).toBe(0);
   });
 });

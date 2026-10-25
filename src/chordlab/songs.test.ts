@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   addItem,
+  addItems,
   addRow,
   duplicateItem,
   itemLabel,
@@ -11,6 +12,7 @@ import {
   newSong,
   normalizeStore,
   removeItem,
+  replaceItem,
   removeRow,
   renameRow,
   updateItem,
@@ -83,6 +85,20 @@ describe('scales inside rows', () => {
     s = addItem(s, s.rows[0].id, ch('a'));
     s = updateItem(s, 'a', (it) => (it.kind === 'chord' ? { ...it, root: 9, quality: 'min', frets: [-1, 0, 2, 2, 1, 0] } : it));
     expect(itemLabel(s.rows[0].items[0])).toBe('Am');
+  });
+});
+
+describe('scale to chords', () => {
+  it('adds several items at once and replaces a scale by chords in place', () => {
+    let s = newSong();
+    const row = s.rows[0].id;
+    s = addItem(s, row, ch('a'));
+    s = addItem(s, row, sc('s'));
+    s = addItem(s, row, ch('z'));
+    s = replaceItem(s, 's', [ch('x'), ch('y')]);
+    expect(ids(s)).toEqual(['a', 'x', 'y', 'z']);
+    s = addItems(s, row, [ch('p'), ch('q')]);
+    expect(ids(s)).toEqual(['a', 'x', 'y', 'z', 'p', 'q']);
   });
 });
 

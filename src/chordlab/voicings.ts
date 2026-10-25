@@ -164,3 +164,14 @@ export function voicingSymbol(root: PitchClass, quality: LibraryQuality, frets: 
 export const fretsText = (frets: Frets): string => frets.map((f) => (f < 0 ? 'x' : f > 9 ? `(${f})` : String(f))).join('');
 
 export { stringPc };
+
+/**
+ * Default shape to place a chord in a song: the easiest root-position voicing, or, when a neck
+ * position is given (a scale box), the root-position voicing closest to it.
+ */
+export function pickVoicing(root: PitchClass, quality: LibraryQuality, nearFret: number | null = null): Frets {
+  const groups = searchVoicings(root, quality);
+  const g = groups.find((x) => x.inversion === 0) ?? groups[0];
+  if (nearFret === null) return g.voicings[0].frets;
+  return [...g.voicings].sort((a, b) => Math.abs(a.base - nearFret) - Math.abs(b.base - nearFret) || a.score - b.score)[0].frets;
+}

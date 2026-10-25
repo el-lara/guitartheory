@@ -54,6 +54,8 @@ export const CHORD_LIBRARY = {
   sus4: { name: 'Suspendido 4', suffix: 'sus4', intervals: [0, 5, 7], degrees: ['1', '4', '5'] },
   dim: { name: 'Disminuido', suffix: 'dim', intervals: [0, 3, 6], degrees: ['1', '♭3', '♭5'] },
   aug: { name: 'Aumentado', suffix: 'aug', intervals: [0, 4, 8], degrees: ['1', '3', '♯5'] },
+  m7b5: { name: 'Semidisminuido', suffix: 'm7♭5', intervals: [0, 3, 6, 10], degrees: ['1', '♭3', '♭5', '♭7'] },
+  dim7: { name: 'Disminuido 7', suffix: 'dim7', intervals: [0, 3, 6, 9], degrees: ['1', '♭3', '♭5', '♭♭7'] },
 } satisfies Record<string, LibraryChord>;
 
 export type LibraryQuality = keyof typeof CHORD_LIBRARY;

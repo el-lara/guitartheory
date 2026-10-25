@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { audio } from '../audio/webAudio';
 import {
   addItem,
+  addItems,
   addRow,
   duplicateItem,
   itemLabel,
@@ -14,6 +15,7 @@ import {
   removeItem,
   removeRow,
   renameRow,
+  replaceItem,
   saveSongs,
   uid,
   updateItem,
@@ -23,18 +25,22 @@ import {
   type SongScale,
   type SongStore,
 } from '../chordlab/songs';
-import { fretsMidi, fretsText, inversionOf, searchVoicings, stringPc, voicingSymbol, type Frets } from '../chordlab/voicings';
+import { fretsMidi, fretsText, inversionOf, pickVoicing, searchVoicings, stringPc, voicingSymbol, type Frets } from '../chordlab/voicings';
 import { BOX_SPAN } from '../fretboard/scaleBox';
 import {
   CHORD_LIBRARY,
   libraryChordName,
   libraryPcs,
   LIBRARY_QUALITIES,
+  chordSymbol,
   noteName,
   NOTE_NAMES,
+  romanNumeral,
   SCALES,
+  scaleChords,
   scalePcs,
   scaleSteps,
+  type Harmonization,
   type LibraryQuality,
   type PitchClass,
 } from '../theory';
@@ -67,6 +73,16 @@ const bestFrets = (root: PitchClass, quality: LibraryQuality, wantInversion: num
   return (groups.find((g) => g.inversion === wantInversion) ?? groups[0]).voicings[0].frets;
 };
 
+/** Chords of a scale as song items, each with an easy (or box-near) voicing. */
+const chordItemsOf = (scale: ScaleChoice, harm: Harmonization): SongChord[] =>
+  scaleChords(scale.tonic, scale.type, harm).map((c) => ({
+    kind: 'chord' as const,
+    id: uid(),
+    root: c.root,
+    quality: c.quality,
+    frets: pickVoicing(c.root, c.quality, scale.box),
+  }));
+
 const playFrets = (frets: Frets) => audio.playChord(fretsMidi(frets));
 
 const scaleMidis = (tonic: PitchClass, type: SongScale['type']): number[] => {
@@ -83,6 +99,7 @@ export function ChordLab({ onBack }: { onBack: () => void }) {
   const [draft, setDraft] = useState<ChordDraft>(() => ({ root: 0, quality: 'maj', frets: bestFrets(0, 'maj', 0) }));
   const [scaleDraft, setScaleDraft] = useState<ScaleChoice>({ tonic: 9, type: 'pentatonicMinor', box: null });
   const [labels, setLabels] = useState<'notes' | 'degrees'>('notes');
+  const [harm, setHarm] = useState<Harmonization>('triads');
   const [store, setStore] = useState<SongStore>(loadSongs);
   const [activeRow, setActiveRow] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -152,6 +169,8 @@ export function ChordLab({ onBack }: { onBack: () => void }) {
   };
 
   const scalePcsNow = scalePcs(scale.tonic, scale.type);
+  const harmChords = scaleChords(scale.tonic, scale.type, harm);
+  const heptatonic = scalePcsNow.length === 7;
   const steps = scaleSteps(scale.type);
   const boardMarkers = kind === 'chords' ? markersFor(chord.root, chord.quality, chord.frets) : scaleMarkers(scale.tonic, scale.type, scale.box, labels);
   const boardHighlight = kind === 'scales' && scale.box !== null ? { fretMin: scale.box, fretMax: scale.box + BOX_SPAN } : null;
@@ -231,16 +250,34 @@ export function ChordLab({ onBack }: { onBack: () => void }) {
             ))}
           </div>
           <p className="lead">Pasos entre notas: {steps.join(' – ')} semitonos. Una caja es una ventana de 5 trastes con la escala.</p>
-          <div className="row">
+          <h3 className="sub-h">Acordes de esta escala</h3>
+          <div className="chips-row left">
+            <button className={`pill${harm === 'triads' ? ' sel' : ''}`} onClick={() => setHarm('triads')}>Tríadas</button>
+            <button className={`pill${harm === 'sevenths' ? ' sel' : ''}`} onClick={() => setHarm('sevenths')}>Séptimas</button>
+          </div>
+          <div className="harm">
+            {harmChords.map((c, i) => (
+              <span key={i} className="harm-chord">
+                {heptatonic && <small>{romanNumeral(c.degree, c.quality)}</small>}
+                <b>{chordSymbol(c.root, c.quality)}</b>
+              </span>
+            ))}
+            {harmChords.length === 0 && <span className="empty">Esta escala no forma acordes de este tipo con sus propias notas.</span>}
+          </div>
+          <p className="lead">Son los acordes que se pueden armar usando solo notas de la escala{heptatonic ? ' (apilando terceras sobre cada grado)' : ''}.</p>
+          <div className="row wrap">
             <button className="ghost" onClick={() => scaleMidis(scale.tonic, scale.type).forEach((m, i) => window.setTimeout(() => audio.playNote(m), i * SCALE_NOTE_MS))}>🔊 Escuchar</button>
             <button className={`pill${labels === 'notes' ? ' sel' : ''}`} onClick={() => setLabels('notes')}>Notas</button>
             <button className={`pill${labels === 'degrees' ? ' sel' : ''}`} onClick={() => setLabels('degrees')}>Grados</button>
-            {!editing && (
-              <button className="add-btn" onClick={() => updateSong((s) => addItem(s, targetRow.id, { kind: 'scale', id: uid(), ...scale }))}>
-                ＋ Añadir a «{targetRow.label}»
-              </button>
-            )}
           </div>
+          {!editing && (
+            <div className="row wrap add-row">
+              <button className="add-btn" disabled={harmChords.length === 0} onClick={() => updateSong((s) => addItems(s, targetRow.id, chordItemsOf(scale, harm)))}>
+                ＋ Añadir los {harmChords.length} acordes a «{targetRow.label}»
+              </button>
+              <button className="ghost" onClick={() => updateSong((s) => addItem(s, targetRow.id, { kind: 'scale', id: uid(), ...scale }))}>＋ Solo la escala (notas)</button>
+            </div>
+          )}
         </div>
       )}
 
@@ -316,6 +353,9 @@ export function ChordLab({ onBack }: { onBack: () => void }) {
                   <button className="ghost" aria-label="Mover a la derecha" onClick={() => updateSong((s) => moveItem(s, sel.id, 1))}>Der. ›</button>
                   <button className="ghost" disabled={ri === 0} aria-label="Mover a la fila anterior" onClick={() => updateSong((s) => moveItemToRow(s, sel.id, -1))}>⇡ Fila</button>
                   <button className="ghost" disabled={ri === song.rows.length - 1} aria-label="Mover a la fila siguiente" onClick={() => updateSong((s) => moveItemToRow(s, sel.id, 1))}>⇣ Fila</button>
+                  {sel.kind === 'scale' && (
+                    <button className="ghost" onClick={() => { const chords = chordItemsOf(sel, harm); updateSong((s) => replaceItem(s, sel.id, chords)); setSelected(null); }}>♬ Pasar a acordes</button>
+                  )}
                   <button className="ghost" onClick={() => updateSong((s) => duplicateItem(s, sel.id))}>⧉ Duplicar</button>
                   <button className="ghost danger" onClick={() => { updateSong((s) => removeItem(s, sel.id)); setSelected(null); }}>✕ Quitar</button>
                 </div>

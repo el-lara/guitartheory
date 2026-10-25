@@ -284,3 +284,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .sd-dot.root { fill: var(--accent); }
 .sd-num { fill: var(--dim); font-size: 8px; }
 .row .pill { align-self: center; }
+.sub-h { margin: 14px 0 4px; font-size: 1rem; }
+.chips-row.left { justify-content: flex-start; margin: 4px 0; }
+.harm { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.harm-chord { display: inline-flex; flex-direction: column; align-items: center; min-width: 54px; padding: 4px 10px; background: var(--panel2); border-radius: 10px; }
+.harm-chord small { color: var(--accent); font-size: .72rem; font-weight: 700; }
+.harm-chord b { font-size: 1.05rem; }
+.row.wrap { flex-wrap: wrap; align-items: center; }
+.add-row { margin-top: 8px; }
+.add-btn:disabled { opacity: .4; cursor: default; }
