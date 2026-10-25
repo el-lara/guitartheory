@@ -42,7 +42,7 @@ Parámetros útiles: `?gate=1` activa el desbloqueo por rendimiento (por defecto
 | `progression/` | Etapas (registro `STAGES`) y niveles que suben/bajan por rendimiento. Añadir «Escalas» = nueva entrada + generadores. |
 | `srs/` | Repetición espaciada invisible por concepto (`note:F#`, `int:7`, `chord:D:maj`): maestría, racha, fallos, último tick. Sesga el sorteo de conceptos. |
 | `game/` | `Game`: estado de sesión (vidas, racha, puntos, temporizadores) sin React; `discovery.ts` genera las explicaciones cortas. |
-| `audio/` | Interfaz `AudioEngine` (sin implementación en el MVP). |
+| `audio/` | Interfaz `AudioEngine` y motor WebAudio: cuerda pulsada sintetizada (Karplus–Strong, afinada a ±1 cent) con filtros de caja; sin muestras. |
 | `ui/` | Mástil SVG, HUD, pantallas. |
 
 ## Reglas clave
