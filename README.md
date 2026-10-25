@@ -14,6 +14,7 @@ Funciona en el navegador (PC y móvil), sin instalar nada ni crear cuenta. Tu pr
 
 - **Clases**: explicadores visuales e interactivos: notas y semitonos, intervalos, acordes, escalas con cajas sobre el mástil, y geometría (reloj de las 12 notas y círculo de quintas).
 - **Acordes y canciones**: biblioteca de acordes (mayor, menor, séptimas, sus, dim, aug) con digitaciones tocables e inversiones, y un cuaderno de canciones por filas (acordes y escalas, o los acordes de una escala, editables en el sitio) que se guarda en el navegador.
+- **Afinador**: afinaciones (estándar, Drop D, DADGAD, Open G/D) bajadas o subidas por semitonos, con tono de referencia sostenido por cuerda y comparación con la afinación estándar.
 
 La dificultad se adapta a tu rendimiento y lo que más fallas vuelve a aparecer más a menudo.
 

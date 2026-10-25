@@ -13,7 +13,7 @@ const DEMO = [
   { pos: { string: 3, fret: 0 }, kind: 'found' as const, label: 'G' },
 ];
 
-export function Home({ s, onLessons, onChords }: { s: Snapshot; onLessons: () => void; onChords: () => void }) {
+export function Home({ s, onLessons, onChords, onTuner }: { s: Snapshot; onLessons: () => void; onChords: () => void; onTuner: () => void }) {
   const [mode, setMode] = useState<Mode>('mix');
   const [minutes, setMinutes] = useState(5);
 
@@ -30,6 +30,10 @@ export function Home({ s, onLessons, onChords }: { s: Snapshot; onLessons: () =>
       <button className="lessons-link songs-link" onClick={onChords}>
         <b>🎸 Acordes y canciones</b>
         <span>Mira cómo se tocan los acordes, sus inversiones, y arma tus canciones por filas</span>
+      </button>
+      <button className="lessons-link tuner-link" onClick={onTuner}>
+        <b>🎚 Afinador</b>
+        <span>Afina en estándar, medio tono abajo, Drop D… con un tono de referencia por cuerda</span>
       </button>
       <div className="modes">
         <button className={`mode mix${mode === 'mix' ? ' sel' : ''}`} onClick={() => setMode('mix')}>

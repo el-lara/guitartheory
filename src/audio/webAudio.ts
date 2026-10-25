@@ -43,6 +43,53 @@ export class WebAudioEngine implements AudioEngine {
     this.pluck(midi);
   }
 
+  private tones: { gain: GainNode; oscs: OscillatorNode[] }[] = [];
+
+  /** Steady reference tone for tuning (triangle + soft octave), faded in and out. Replaces any tone playing. */
+  playTone(midi: number, seconds = 4) {
+    const ctx = this.context();
+    if (!ctx) return;
+    this.stopTones();
+    const t = ctx.currentTime;
+    const f = freq(midi);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.3, t + 0.05);
+    gain.gain.setValueAtTime(0.3, t + Math.max(0.1, seconds - 0.4));
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + seconds);
+    gain.connect(ctx.destination);
+    const oscs = [ctx.createOscillator(), ctx.createOscillator()];
+    oscs[0].type = 'triangle';
+    oscs[0].frequency.value = f;
+    oscs[1].type = 'sine';
+    oscs[1].frequency.value = f * 2;
+    const octave = ctx.createGain();
+    octave.gain.value = 0.25;
+    oscs[0].connect(gain);
+    oscs[1].connect(octave).connect(gain);
+    for (const o of oscs) {
+      o.start(t);
+      o.stop(t + seconds + 0.05);
+    }
+    this.tones.push({ gain, oscs });
+  }
+
+  stopTones() {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    for (const { gain, oscs } of this.tones) {
+      try {
+        gain.gain.cancelScheduledValues(ctx.currentTime);
+        gain.gain.setValueAtTime(Math.max(gain.gain.value, 0.0001), ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.08);
+        for (const o of oscs) o.stop(ctx.currentTime + 0.1);
+      } catch {
+        /* already stopped */
+      }
+    }
+    this.tones = [];
+  }
+
   playInterval(fromMidi: number, toMidi: number, mode: 'melodic' | 'harmonic') {
     this.pluck(fromMidi);
     this.pluck(toMidi, mode === 'melodic' ? 0.45 : 0);

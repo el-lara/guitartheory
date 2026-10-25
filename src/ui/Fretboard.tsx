@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { positionNote, stringOrdinal, STANDARD_TUNING, type Position, type Region } from '../fretboard/fretboard';
+import { noteNameFlat } from '../theory';
+import { positionNote, positionPc, stringOrdinal, STANDARD_TUNING, type Position, type Region, type Tuning } from '../fretboard/fretboard';
 
 export type MarkerKind = 'target' | 'step' | 'deg1' | 'deg3' | 'deg5' | 'dim' | 'hint' | 'found' | 'locked' | 'origin' | 'mark' | 'reveal' | 'solution' | 'wrong';
 export interface Marker {
@@ -15,13 +16,15 @@ interface Props {
   disabled?: boolean;
   /** Draw every note name on the neck. */
   showNotes?: boolean;
+  /** Tuning shown on the left and used for note names; standard when omitted. */
+  tuning?: Tuning;
   onPlay: (pos: Position) => void;
 }
 
 const SINGLE_INLAYS = [3, 5, 7, 9];
 const STRINGS = STANDARD_TUNING.strings.length;
 
-export function Fretboard({ fretMax, markers, highlight, disabled, showNotes, onPlay }: Props) {
+export function Fretboard({ fretMax, markers, highlight, disabled, showNotes, tuning = STANDARD_TUNING, onPlay }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(900);
 
@@ -52,6 +55,8 @@ export function Fretboard({ fretMax, markers, highlight, disabled, showNotes, on
   const boardTop = topPad - gap / 2;
   const boardH = gap * STRINGS;
 
+  // downtunings are spelled with flats (Eb, Gb...), so the neck should be too
+  const flats = tuning.strings.some((st) => st.label.includes('b'));
   const cells: Position[] = [];
   for (let s = 0; s < STRINGS; s++) for (let f = 0; f <= fretMax; f++) cells.push({ string: s, fret: f });
 
@@ -95,7 +100,7 @@ export function Fretboard({ fretMax, markers, highlight, disabled, showNotes, on
         {Array.from({ length: STRINGS }, (_, s) => (
           <g key={s}>
             <text x={4} y={rowY(s) + 4} className="str-num">{stringOrdinal(s)}</text>
-            <text x={leftPad - 8} y={rowY(s) + 5} textAnchor="end" className="str-note">{STANDARD_TUNING.strings[s].label}</text>
+            <text x={leftPad - 8} y={rowY(s) + 5} textAnchor="end" className="str-note">{tuning.strings[s].label}</text>
           </g>
         ))}
         {/* fret numbers */}
@@ -112,9 +117,9 @@ export function Fretboard({ fretMax, markers, highlight, disabled, showNotes, on
           </g>
         ))}
         {showNotes && cells.map((p) => {
-          const n = positionNote(p);
+          const n = flats ? noteNameFlat(positionPc(p, tuning)) : positionNote(p, tuning);
           return (
-            <text key={`n${p.string}:${p.fret}`} x={cx(p.fret)} y={rowY(p.string) + 4} textAnchor="middle" className={`note-label${n.includes('#') ? ' sharp' : ''}`}>{n}</text>
+            <text key={`n${p.string}:${p.fret}`} x={cx(p.fret)} y={rowY(p.string) + 4} textAnchor="middle" className={`note-label${n.length > 1 ? ' sharp' : ''}`}>{n}</text>
           );
         })}
         {/* markers */}

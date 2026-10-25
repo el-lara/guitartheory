@@ -8,6 +8,14 @@ export const mod12 = (n: number): number => ((n % 12) + 12) % 12;
 
 export const noteName = (pc: PitchClass): string => NOTE_NAMES[mod12(pc)];
 
+export const FLAT_NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'] as const;
+
+/** Same pitch class spelled with flats instead of sharps (what guitarists say for downtuning: Eb, not D#). */
+export const noteNameFlat = (pc: PitchClass): string => FLAT_NAMES[mod12(pc)];
+
+/** Frequency in Hz of a MIDI note (equal temperament, A4 = 440). */
+export const midiFreq = (midi: number, a4 = 440): number => a4 * 2 ** ((midi - 69) / 12);
+
 const LETTER: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 
 /** Parses "C", "F#", "Bb", "Ebb"... into a pitch class. */

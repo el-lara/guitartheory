@@ -293,3 +293,24 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .row.wrap { flex-wrap: wrap; align-items: center; }
 .add-row { margin-top: 8px; }
 .add-btn:disabled { opacity: .4; cursor: default; }
+
+/* tuner */
+.tuner-link { margin-top: 10px; border-color: var(--ok); }
+.lead.center { text-align: center; color: var(--dim); font-size: .9rem; margin: 6px 0; }
+.lead.warn { color: var(--accent); }
+.tuner-card { max-width: 820px; }
+.tuner-rows { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+.tuner-row { display: grid; grid-template-columns: 56px 92px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; background: var(--panel2); border: 2px solid transparent; border-radius: 12px; }
+.tuner-row.on { border-color: var(--ok); }
+.t-string, .t-note, .t-delta { display: flex; flex-direction: column; line-height: 1.2; }
+.t-string b { font-size: 1.1rem; }
+.t-string span, .t-note small, .t-delta small { color: var(--dim); font-size: .75rem; }
+.t-note b { font-size: 1.7rem; color: var(--accent); }
+.t-delta b { font-size: .95rem; }
+.t-delta.down b { color: var(--info); }
+.t-delta.up b { color: var(--bad); }
+.t-btns { display: flex; flex-direction: column; gap: 2px; align-items: stretch; }
+@media (max-width: 560px) {
+  .tuner-row { grid-template-columns: 44px 70px 1fr; }
+  .t-btns { grid-column: 1 / -1; flex-direction: row; justify-content: flex-end; }
+}
