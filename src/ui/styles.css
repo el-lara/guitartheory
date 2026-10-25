@@ -273,3 +273,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .danger { color: var(--bad); }
 .songbar { margin-top: 6px; }
 .ghost:disabled { opacity: .35; cursor: default; }
+.editing-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; margin: 8px 0; padding: 8px 12px; background: var(--panel); border: 2px solid var(--accent); border-radius: 12px; font-size: .9rem; }
+.song-chip.scale { padding: 4px 6px 6px; }
+.scale-diagram { max-width: 100%; }
+.sd-wood { fill: #4a2f1b; }
+.sd-fret { stroke: #b9aa96; stroke-width: 1; opacity: .6; }
+.sd-nut { stroke: #f2ead9; stroke-width: 2.5; }
+.sd-string { stroke: #d8cdb8; stroke-width: .8; opacity: .8; }
+.sd-dot { fill: var(--info); }
+.sd-dot.root { fill: var(--accent); }
+.sd-num { fill: var(--dim); font-size: 8px; }
+.row .pill { align-self: center; }

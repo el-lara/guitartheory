@@ -13,7 +13,7 @@ Funciona en el navegador (PC y móvil), sin instalar nada ni crear cuenta. Tu pr
 - **Constructor de acordes**: construye tríadas mayores y menores nota a nota.
 
 - **Clases**: explicadores visuales e interactivos: notas y semitonos, intervalos, acordes, escalas con cajas sobre el mástil, y geometría (reloj de las 12 notas y círculo de quintas).
-- **Acordes y canciones**: biblioteca de acordes (mayor, menor, séptimas, sus, dim, aug) con digitaciones tocables e inversiones, y un cuaderno de canciones por filas que se guarda en el navegador.
+- **Acordes y canciones**: biblioteca de acordes (mayor, menor, séptimas, sus, dim, aug) con digitaciones tocables e inversiones, y un cuaderno de canciones por filas (acordes y escalas, editables en el sitio) que se guarda en el navegador.
 
 La dificultad se adapta a tu rendimiento y lo que más fallas vuelve a aparecer más a menudo.
 

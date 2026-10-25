@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react';
 import { audio } from '../audio/webAudio';
-import { positionMidi, positionPc, regionPositions } from '../fretboard/fretboard';
+import { positionMidi } from '../fretboard/fretboard';
+import { BOX_MAX_START, BOX_SPAN, defaultBoxStart } from '../fretboard/scaleBox';
+import { scaleMarkers } from './scaleMarkers';
 import { intervalName, noteName, NOTE_NAMES, SCALE_TYPES, SCALES, scalePcs, scaleSteps, type ScaleType } from '../theory';
-import { Fretboard, type Marker } from './Fretboard';
+import { Fretboard } from './Fretboard';
 
-const FULL = { fretMin: 0, fretMax: 12 };
-const WINDOW = 4; // a "box" spans 5 frets: start..start+4
 
 const stepName = (n: number) => (n === 1 ? 'S' : n === 2 ? 'T' : n === 3 ? 'T+S' : String(n));
 
@@ -27,22 +27,8 @@ export function ScalesLesson() {
   const info = SCALES[type];
   const pcs = scalePcs(tonic, type);
   const steps = scaleSteps(type);
-  const degreeOf = (pc: number) => info.degrees[pcs.indexOf(pc)];
-
-  const markers: Marker[] = [];
-  for (const pos of regionPositions(FULL)) {
-    const pc = positionPc(pos);
-    if (!pcs.includes(pc)) continue;
-    const inBox = box === null || (pos.fret >= box && pos.fret <= box + WINDOW);
-    markers.push({
-      pos,
-      kind: !inBox ? 'dim' : pc === tonic ? 'deg1' : 'deg5',
-      label: labels === 'notes' ? noteName(pc) : degreeOf(pc),
-    });
-  }
-
-  const rootFretOn6 = (tonic - 4 + 12) % 12; // fret of the tonic on the low E string
-  const boxStart = Math.min(rootFretOn6, 8);
+  const markers = scaleMarkers(tonic, type, box, labels);
+  const boxStart = defaultBoxStart(tonic);
 
   const play = () => {
     timers.current.forEach(clearTimeout);
@@ -69,14 +55,14 @@ export function ScalesLesson() {
         <span className="sep" />
         <button className="pill" disabled={box === null || box <= 0} onClick={() => setBox((b) => Math.max(0, (b ?? 0) - 1))}>‹</button>
         <button className={`pill wide${box !== null ? ' sel' : ''}`} onClick={() => setBox(box === null ? boxStart : null)}>
-          {box === null ? 'Ver una caja' : `Caja: trastes ${box}–${box + WINDOW}`}
+          {box === null ? 'Ver una caja' : `Caja: trastes ${box}–${box + BOX_SPAN}`}
         </button>
-        <button className="pill" disabled={box === null || box >= 8} onClick={() => setBox((b) => Math.min(8, (b ?? 0) + 1))}>›</button>
+        <button className="pill" disabled={box === null || box >= BOX_MAX_START} onClick={() => setBox((b) => Math.min(BOX_MAX_START, (b ?? 0) + 1))}>›</button>
       </div>
       <Fretboard
         fretMax={12}
         markers={markers}
-        highlight={box === null ? null : { fretMin: box, fretMax: box + WINDOW }}
+        highlight={box === null ? null : { fretMin: box, fretMax: box + BOX_SPAN }}
         onPlay={(p) => audio.playNote(positionMidi(p))}
       />
       <div className="lesson-card">

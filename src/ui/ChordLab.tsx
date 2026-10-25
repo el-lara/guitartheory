@@ -1,24 +1,30 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { audio } from '../audio/webAudio';
 import {
-  addChord,
+  addItem,
   addRow,
-  duplicateChord,
+  duplicateItem,
+  itemLabel,
+  itemText,
   loadSongs,
-  moveChord,
-  moveChordToRow,
+  moveItem,
+  moveItemToRow,
   moveRow,
   newSong,
-  removeChord,
+  removeItem,
   removeRow,
   renameRow,
   saveSongs,
   uid,
+  updateItem,
   type Song,
   type SongChord,
+  type SongItem,
+  type SongScale,
   type SongStore,
 } from '../chordlab/songs';
 import { fretsMidi, fretsText, inversionOf, searchVoicings, stringPc, voicingSymbol, type Frets } from '../chordlab/voicings';
+import { BOX_SPAN } from '../fretboard/scaleBox';
 import {
   CHORD_LIBRARY,
   libraryChordName,
@@ -26,11 +32,17 @@ import {
   LIBRARY_QUALITIES,
   noteName,
   NOTE_NAMES,
+  SCALES,
+  scalePcs,
+  scaleSteps,
   type LibraryQuality,
   type PitchClass,
 } from '../theory';
 import { ChordDiagram } from './ChordDiagram';
 import { Fretboard, type Marker, type MarkerKind } from './Fretboard';
+import { ScaleDiagram } from './ScaleDiagram';
+import { ScalePicker, type ScaleChoice } from './ScalePicker';
+import { scaleMarkers } from './scaleMarkers';
 import { positionMidi } from '../fretboard/fretboard';
 
 const TONE_KINDS: MarkerKind[] = ['deg1', 'deg3', 'deg5', 'target'];
@@ -44,13 +56,33 @@ function markersFor(root: PitchClass, quality: LibraryQuality, frets: Frets): Ma
   });
 }
 
+interface ChordDraft {
+  root: PitchClass;
+  quality: LibraryQuality;
+  frets: Frets;
+}
+
+const bestFrets = (root: PitchClass, quality: LibraryQuality, wantInversion: number): Frets => {
+  const groups = searchVoicings(root, quality);
+  return (groups.find((g) => g.inversion === wantInversion) ?? groups[0]).voicings[0].frets;
+};
+
 const playFrets = (frets: Frets) => audio.playChord(fretsMidi(frets));
 
+const scaleMidis = (tonic: PitchClass, type: SongScale['type']): number[] => {
+  const base = 48 + tonic;
+  return [...SCALES[type].intervals.map((i) => base + i), base + 12];
+};
+const SCALE_NOTE_MS = 300;
+const CHORD_MS = 1100;
+/** How long an item occupies the playback timeline. */
+const itemMs = (it: SongItem): number => (it.kind === 'chord' ? CHORD_MS : (SCALES[it.type].intervals.length + 2) * SCALE_NOTE_MS);
+
 export function ChordLab({ onBack }: { onBack: () => void }) {
-  const [root, setRoot] = useState(0);
-  const [quality, setQuality] = useState<LibraryQuality>('maj');
-  const [inv, setInv] = useState(0);
-  const [vIdx, setVIdx] = useState(0);
+  const [mode, setMode] = useState<'chords' | 'scales'>('chords');
+  const [draft, setDraft] = useState<ChordDraft>(() => ({ root: 0, quality: 'maj', frets: bestFrets(0, 'maj', 0) }));
+  const [scaleDraft, setScaleDraft] = useState<ScaleChoice>({ tonic: 9, type: 'pentatonicMinor', box: null });
+  const [labels, setLabels] = useState<'notes' | 'degrees'>('notes');
   const [store, setStore] = useState<SongStore>(loadSongs);
   const [activeRow, setActiveRow] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -64,39 +96,51 @@ export function ChordLab({ onBack }: { onBack: () => void }) {
   const song = store.songs.find((s) => s.id === store.currentId)!;
   const updateSong = (fn: (s: Song) => Song) =>
     setStore((st) => ({ ...st, songs: st.songs.map((s) => (s.id === st.currentId ? fn(s) : s)) }));
-
-  const groups = useMemo(() => searchVoicings(root, quality), [root, quality]);
-  const group = groups.find((g) => g.inversion === inv) ?? groups[0];
-  const voicing = group.voicings[Math.min(vIdx, group.voicings.length - 1)];
-
-  const selectedChord = song.rows.flatMap((r) => r.chords).find((c) => c.id === selected) ?? null;
-  const shown = selectedChord
-    ? { root: selectedChord.root, quality: selectedChord.quality, frets: selectedChord.frets }
-    : { root, quality, frets: voicing.frets };
-  const shownPcs = libraryPcs(shown.root, shown.quality);
-  const shownInv = inversionOf(shown.root, shown.quality, shown.frets);
-  const bassPc = shown.frets.findIndex((f) => f >= 0);
-
-  const pick = (fn: () => void) => {
-    setSelected(null);
-    fn();
-  };
   const targetRow = song.rows.find((r) => r.id === activeRow) ?? song.rows[song.rows.length - 1];
+
+  // ---- what the pickers are bound to: the selected song item (edit) or the explorer draft ----
+  const editing = song.rows.flatMap((r) => r.items).find((c) => c.id === selected) ?? null;
+  const kind: 'chords' | 'scales' = editing ? (editing.kind === 'chord' ? 'chords' : 'scales') : mode;
+  const chord: ChordDraft = editing?.kind === 'chord' ? { root: editing.root, quality: editing.quality, frets: editing.frets } : draft;
+  const scale: ScaleChoice = editing?.kind === 'scale' ? { tonic: editing.tonic, type: editing.type, box: editing.box } : scaleDraft;
+
+  const commitChord = (next: ChordDraft) => {
+    if (editing?.kind === 'chord') updateSong((s) => updateItem(s, editing.id, (it) => ({ ...(it as SongChord), ...next })));
+    else setDraft(next);
+  };
+  const commitScale = (next: ScaleChoice) => {
+    if (editing?.kind === 'scale') updateSong((s) => updateItem(s, editing.id, (it) => ({ ...(it as SongScale), ...next })));
+    else setScaleDraft(next);
+  };
+
+  const groups = useMemo(() => searchVoicings(chord.root, chord.quality), [chord.root, chord.quality]);
+  const curInv = Math.max(0, inversionOf(chord.root, chord.quality, chord.frets));
+  const group = groups.find((g) => g.inversion === curInv) ?? groups[0];
+  const bassString = chord.frets.findIndex((f) => f >= 0);
+
+  const setRoot = (root: PitchClass) => commitChord({ ...chord, root, frets: bestFrets(root, chord.quality, curInv) });
+  const setQuality = (quality: LibraryQuality) => commitChord({ ...chord, quality, frets: bestFrets(chord.root, quality, curInv) });
 
   const stop = () => {
     timers.current.forEach(clearTimeout);
     timers.current = [];
     setPlayingId(null);
   };
-  const playChords = (chords: SongChord[]) => {
+  const playItem = (it: SongItem) => {
+    if (it.kind === 'chord') playFrets(it.frets);
+    else scaleMidis(it.tonic, it.type).forEach((m, i) => timers.current.push(window.setTimeout(() => audio.playNote(m), i * SCALE_NOTE_MS)));
+  };
+  const playItems = (items: SongItem[]) => {
     stop();
-    chords.forEach((c, i) => {
-      timers.current.push(window.setTimeout(() => { setPlayingId(c.id); playFrets(c.frets); }, i * 1100));
-    });
-    timers.current.push(window.setTimeout(() => setPlayingId(null), chords.length * 1100));
+    let t = 0;
+    for (const it of items) {
+      timers.current.push(window.setTimeout(() => { setPlayingId(it.id); playItem(it); }, t));
+      t += itemMs(it);
+    }
+    timers.current.push(window.setTimeout(() => setPlayingId(null), t));
   };
 
-  const songText = [song.name, ...song.rows.map((r) => `${r.label}: ${r.chords.map((c) => voicingSymbol(c.root, c.quality, c.frets)).join(' | ')}`)].join('\n');
+  const songText = [song.name, ...song.rows.map((r) => `${r.label}: ${r.items.map(itemText).join(' | ')}`)].join('\n');
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(songText);
@@ -107,6 +151,11 @@ export function ChordLab({ onBack }: { onBack: () => void }) {
     }
   };
 
+  const scalePcsNow = scalePcs(scale.tonic, scale.type);
+  const steps = scaleSteps(scale.type);
+  const boardMarkers = kind === 'chords' ? markersFor(chord.root, chord.quality, chord.frets) : scaleMarkers(scale.tonic, scale.type, scale.box, labels);
+  const boardHighlight = kind === 'scales' && scale.box !== null ? { fretMin: scale.box, fretMax: scale.box + BOX_SPAN } : null;
+
   return (
     <div className="lessons chordlab">
       <header className="lessons-head">
@@ -115,57 +164,97 @@ export function ChordLab({ onBack }: { onBack: () => void }) {
         <span />
       </header>
 
-      <div className="chips-row" role="group" aria-label="Raíz">
-        {NOTE_NAMES.map((nm, pc) => (
-          <button key={nm} className={`pill${!selectedChord && pc === root ? ' sel' : ''}`} onClick={() => pick(() => { setRoot(pc); setInv(0); setVIdx(0); })}>{nm}</button>
-        ))}
-      </div>
-      <div className="chips-row" role="group" aria-label="Tipo de acorde">
-        {LIBRARY_QUALITIES.map((q) => (
-          <button key={q} className={`pill wide${!selectedChord && q === quality ? ' sel' : ''}`} onClick={() => pick(() => { setQuality(q); setInv(0); setVIdx(0); })}>
-            {CHORD_LIBRARY[q].name}
-          </button>
-        ))}
-      </div>
-
-      <Fretboard fretMax={12} markers={markersFor(shown.root, shown.quality, shown.frets)} onPlay={(p) => audio.playNote(positionMidi(p))} />
-
-      <div className="lesson-card chord-info">
-        <div className="chord-title">
-          <h2>{libraryChordName(shown.root, shown.quality)}</h2>
-          <span className="symbol">{voicingSymbol(shown.root, shown.quality, shown.frets)}</span>
+      {editing ? (
+        <div className="editing-bar">
+          <span>✎ Editando <b>{itemLabel(editing)}</b>: los selectores cambian este elemento.</span>
+          <button className="add-btn" onClick={() => setSelected(null)}>✓ Listo</button>
         </div>
-        <div className="formula">
-          {shownPcs.map((pc, i) => (
-            <span key={i} className={`tone ${TONE_KINDS[i] === 'target' ? 'deg7' : TONE_KINDS[i]}`}><b>{noteName(pc)}</b><small>{CHORD_LIBRARY[shown.quality].degrees[i]}</small></span>
-          ))}
+      ) : (
+        <div className="tabs" role="tablist" aria-label="Qué explorar">
+          <button role="tab" aria-selected={mode === 'chords'} className={mode === 'chords' ? 'sel' : ''} onClick={() => setMode('chords')}>Acordes</button>
+          <button role="tab" aria-selected={mode === 'scales'} className={mode === 'scales' ? 'sel' : ''} onClick={() => setMode('scales')}>Escalas</button>
         </div>
-        <p>
-          Forma <b>{fretsText(shown.frets)}</b> (× = cuerda muda, 0 = al aire). Bajo: <b>{noteName(stringPc(bassPc, shown.frets[bassPc]))}</b>
-          {shownInv <= 0 ? ' → posición fundamental.' : ` → ${shownInv}ª inversión: el acorde es el mismo, pero la nota más grave es la ${shownInv === 1 ? 'tercera' : shownInv === 2 ? 'quinta' : 'séptima'}.`}
-        </p>
-        <div className="row">
-          <button className="ghost" onClick={() => playFrets(shown.frets)}>🔊 Escuchar</button>
-          {!selectedChord && (
-            <button className="add-btn" onClick={() => { const c = { id: uid(), root, quality, frets: voicing.frets }; updateSong((s) => addChord(s, targetRow.id, c)); }}>
-              ＋ Añadir a «{targetRow.label}»
-            </button>
-          )}
-          {selectedChord && <button className="ghost" onClick={() => setSelected(null)}>← Volver al explorador</button>}
-        </div>
-      </div>
+      )}
 
-      {!selectedChord && (
+      {kind === 'chords' ? (
+        <>
+          <div className="chips-row" role="group" aria-label="Raíz">
+            {NOTE_NAMES.map((nm, pc) => (
+              <button key={nm} className={`pill${pc === chord.root ? ' sel' : ''}`} onClick={() => setRoot(pc)}>{nm}</button>
+            ))}
+          </div>
+          <div className="chips-row" role="group" aria-label="Tipo de acorde">
+            {LIBRARY_QUALITIES.map((q) => (
+              <button key={q} className={`pill wide${q === chord.quality ? ' sel' : ''}`} onClick={() => setQuality(q)}>{CHORD_LIBRARY[q].name}</button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <ScalePicker value={scale} onChange={commitScale} />
+      )}
+
+      <Fretboard fretMax={12} markers={boardMarkers} highlight={boardHighlight} onPlay={(p) => audio.playNote(positionMidi(p))} />
+
+      {kind === 'chords' ? (
+        <div className="lesson-card chord-info">
+          <div className="chord-title">
+            <h2>{libraryChordName(chord.root, chord.quality)}</h2>
+            <span className="symbol">{voicingSymbol(chord.root, chord.quality, chord.frets)}</span>
+          </div>
+          <div className="formula">
+            {libraryPcs(chord.root, chord.quality).map((pc, i) => (
+              <span key={i} className={`tone ${TONE_KINDS[i] === 'target' ? 'deg7' : TONE_KINDS[i]}`}><b>{noteName(pc)}</b><small>{CHORD_LIBRARY[chord.quality].degrees[i]}</small></span>
+            ))}
+          </div>
+          <p>
+            Forma <b>{fretsText(chord.frets)}</b> (× = cuerda muda, 0 = al aire). Bajo: <b>{noteName(stringPc(bassString, chord.frets[bassString]))}</b>
+            {curInv <= 0 ? ' → posición fundamental.' : ` → ${curInv}ª inversión: el acorde es el mismo, pero la nota más grave es la ${curInv === 1 ? 'tercera' : curInv === 2 ? 'quinta' : 'séptima'}.`}
+          </p>
+          <div className="row">
+            <button className="ghost" onClick={() => playFrets(chord.frets)}>🔊 Escuchar</button>
+            {!editing && (
+              <button className="add-btn" onClick={() => updateSong((s) => addItem(s, targetRow.id, { kind: 'chord', id: uid(), ...chord }))}>
+                ＋ Añadir a «{targetRow.label}»
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="lesson-card chord-info">
+          <div className="chord-title">
+            <h2>{noteName(scale.tonic)} {SCALES[scale.type].name.toLowerCase()}</h2>
+            <span className="symbol">{scale.box === null ? '0–12' : `${scale.box}–${scale.box + BOX_SPAN}`}</span>
+          </div>
+          <div className="formula">
+            {scalePcsNow.map((pc, i) => (
+              <span key={i} className={`tone ${i === 0 ? 'deg1' : 'deg5'}`}><b>{noteName(pc)}</b><small>{SCALES[scale.type].degrees[i]}</small></span>
+            ))}
+          </div>
+          <p className="lead">Pasos entre notas: {steps.join(' – ')} semitonos. Una caja es una ventana de 5 trastes con la escala.</p>
+          <div className="row">
+            <button className="ghost" onClick={() => scaleMidis(scale.tonic, scale.type).forEach((m, i) => window.setTimeout(() => audio.playNote(m), i * SCALE_NOTE_MS))}>🔊 Escuchar</button>
+            <button className={`pill${labels === 'notes' ? ' sel' : ''}`} onClick={() => setLabels('notes')}>Notas</button>
+            <button className={`pill${labels === 'degrees' ? ' sel' : ''}`} onClick={() => setLabels('degrees')}>Grados</button>
+            {!editing && (
+              <button className="add-btn" onClick={() => updateSong((s) => addItem(s, targetRow.id, { kind: 'scale', id: uid(), ...scale }))}>
+                ＋ Añadir a «{targetRow.label}»
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {kind === 'chords' && (
         <div className="voicing-area">
           <div className="chips-row" role="group" aria-label="Inversión">
             {groups.map((g) => (
-              <button key={g.inversion} className={`pill wide${g.inversion === group.inversion ? ' sel' : ''}`} onClick={() => { setInv(g.inversion); setVIdx(0); }}>{g.label}</button>
+              <button key={g.inversion} className={`pill wide${g.inversion === group.inversion ? ' sel' : ''}`} onClick={() => commitChord({ ...chord, frets: g.voicings[0].frets })}>{g.label}</button>
             ))}
           </div>
           <div className="voicings">
-            {group.voicings.map((v, i) => (
-              <button key={v.frets.join()} className={`voicing${i === vIdx ? ' sel' : ''}`} onClick={() => { setVIdx(i); playFrets(v.frets); }}>
-                <ChordDiagram root={root} frets={v.frets} />
+            {group.voicings.map((v) => (
+              <button key={v.frets.join()} className={`voicing${v.frets.join() === chord.frets.join() ? ' sel' : ''}`} onClick={() => { commitChord({ ...chord, frets: v.frets }); playFrets(v.frets); }}>
+                <ChordDiagram root={chord.root} frets={v.frets} />
                 <small>{fretsText(v.frets)}</small>
               </button>
             ))}
@@ -198,33 +287,37 @@ export function ChordLab({ onBack }: { onBack: () => void }) {
 
         {song.rows.map((row, ri) => {
           const isActive = targetRow.id === row.id;
-          const sel = row.chords.find((c) => c.id === selected);
+          const sel = row.items.find((c) => c.id === selected);
           return (
             <div key={row.id} className={`song-row${isActive ? ' active' : ''}`} onClick={() => setActiveRow(row.id)}>
               <div className="row-head">
                 <input value={row.label} onChange={(e) => updateSong((s) => renameRow(s, row.id, e.target.value))} aria-label="Nombre de la fila" />
                 <button className="ghost" disabled={ri === 0} aria-label="Subir fila" onClick={() => updateSong((s) => moveRow(s, row.id, -1))}>↑</button>
                 <button className="ghost" disabled={ri === song.rows.length - 1} aria-label="Bajar fila" onClick={() => updateSong((s) => moveRow(s, row.id, 1))}>↓</button>
-                <button className="ghost" disabled={!row.chords.length} onClick={() => (playingId ? stop() : playChords(row.chords))}>{playingId ? '■' : '▶ Fila'}</button>
-                <button className="ghost" aria-label="Borrar fila" onClick={() => { if (!row.chords.length || confirm('¿Borrar la fila y sus acordes?')) updateSong((s) => removeRow(s, row.id)); }}>🗑</button>
+                <button className="ghost" disabled={!row.items.length} onClick={() => (playingId ? stop() : playItems(row.items))}>{playingId ? '■' : '▶ Fila'}</button>
+                <button className="ghost" aria-label="Borrar fila" onClick={() => { if (!row.items.length || confirm('¿Borrar la fila y todo lo que contiene?')) updateSong((s) => removeRow(s, row.id)); }}>🗑</button>
               </div>
               <div className="song-chips">
-                {row.chords.length === 0 && <span className="empty">Elige un acorde arriba y pulsa «Añadir».</span>}
-                {row.chords.map((c) => (
-                  <button key={c.id} className={`song-chip${c.id === selected ? ' sel' : ''}${c.id === playingId ? ' playing' : ''}`} onClick={(e) => { e.stopPropagation(); setSelected(c.id === selected ? null : c.id); setActiveRow(row.id); playFrets(c.frets); }}>
-                    <ChordDiagram root={c.root} frets={c.frets} width={64} />
-                    <b>{voicingSymbol(c.root, c.quality, c.frets)}</b>
+                {row.items.length === 0 && <span className="empty">Elige un acorde o una escala arriba y pulsa «Añadir».</span>}
+                {row.items.map((c) => (
+                  <button
+                    key={c.id}
+                    className={`song-chip${c.kind === 'scale' ? ' scale' : ''}${c.id === selected ? ' sel' : ''}${c.id === playingId ? ' playing' : ''}`}
+                    onClick={(e) => { e.stopPropagation(); setSelected(c.id === selected ? null : c.id); setActiveRow(row.id); if (c.id !== selected) { stop(); playItem(c); } }}
+                  >
+                    {c.kind === 'chord' ? <ChordDiagram root={c.root} frets={c.frets} width={64} /> : <ScaleDiagram tonic={c.tonic} type={c.type} box={c.box} width={c.box === null ? 120 : 96} />}
+                    <b>{itemLabel(c)}</b>
                   </button>
                 ))}
               </div>
               {sel && (
                 <div className="chip-tools" onClick={(e) => e.stopPropagation()}>
-                  <button className="ghost" aria-label="Mover a la izquierda" onClick={() => updateSong((s) => moveChord(s, sel.id, -1))}>‹ Izq.</button>
-                  <button className="ghost" aria-label="Mover a la derecha" onClick={() => updateSong((s) => moveChord(s, sel.id, 1))}>Der. ›</button>
-                  <button className="ghost" disabled={ri === 0} aria-label="Mover a la fila anterior" onClick={() => updateSong((s) => moveChordToRow(s, sel.id, -1))}>⇡ Fila</button>
-                  <button className="ghost" disabled={ri === song.rows.length - 1} aria-label="Mover a la fila siguiente" onClick={() => updateSong((s) => moveChordToRow(s, sel.id, 1))}>⇣ Fila</button>
-                  <button className="ghost" onClick={() => updateSong((s) => duplicateChord(s, sel.id))}>⧉ Duplicar</button>
-                  <button className="ghost danger" onClick={() => { updateSong((s) => removeChord(s, sel.id)); setSelected(null); }}>✕ Quitar</button>
+                  <button className="ghost" aria-label="Mover a la izquierda" onClick={() => updateSong((s) => moveItem(s, sel.id, -1))}>‹ Izq.</button>
+                  <button className="ghost" aria-label="Mover a la derecha" onClick={() => updateSong((s) => moveItem(s, sel.id, 1))}>Der. ›</button>
+                  <button className="ghost" disabled={ri === 0} aria-label="Mover a la fila anterior" onClick={() => updateSong((s) => moveItemToRow(s, sel.id, -1))}>⇡ Fila</button>
+                  <button className="ghost" disabled={ri === song.rows.length - 1} aria-label="Mover a la fila siguiente" onClick={() => updateSong((s) => moveItemToRow(s, sel.id, 1))}>⇣ Fila</button>
+                  <button className="ghost" onClick={() => updateSong((s) => duplicateItem(s, sel.id))}>⧉ Duplicar</button>
+                  <button className="ghost danger" onClick={() => { updateSong((s) => removeItem(s, sel.id)); setSelected(null); }}>✕ Quitar</button>
                 </div>
               )}
             </div>
@@ -232,9 +325,9 @@ export function ChordLab({ onBack }: { onBack: () => void }) {
         })}
         <div className="row songbar">
           <button className="ghost" onClick={() => updateSong(addRow)}>＋ Fila</button>
-          <button className="ghost" disabled={!song.rows.some((r) => r.chords.length)} onClick={() => (playingId ? stop() : playChords(song.rows.flatMap((r) => r.chords)))}>{playingId ? '■ Parar' : '▶ Tocar canción'}</button>
+          <button className="ghost" disabled={!song.rows.some((r) => r.items.length)} onClick={() => (playingId ? stop() : playItems(song.rows.flatMap((r) => r.items)))}>{playingId ? '■ Parar' : '▶ Tocar canción'}</button>
         </div>
-        <p className="lead">Las canciones se guardan en este navegador. Usa «Copiar texto» para llevártelas.</p>
+        <p className="lead">Toca un elemento para editarlo con los selectores de arriba. Las canciones se guardan en este navegador; usa «Copiar texto» para llevártelas.</p>
       </section>
     </div>
   );
